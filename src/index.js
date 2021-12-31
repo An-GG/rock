@@ -115,13 +115,10 @@ function cmd(s) {
 }
 function autostart_command() {
     return __awaiter(this, void 0, void 0, function () {
-        var is_root, p, result, result, _i, _a, c;
+        var is_root, p, cr, result, result, _i, _a, c;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    // check command is valid
-                    //
-                    //
                     if (!['enable', 'disable'].includes(args[1])) {
                         console.log('ERROR: invalid command argument');
                         console.log(USAGE);
@@ -134,32 +131,37 @@ function autostart_command() {
                         return [2 /*return*/];
                     }
                     p = get_async_pm2();
-                    if (!(args[1] == 'enable')) return [3 /*break*/, 3];
+                    return [4 /*yield*/, p.connect(false)];
+                case 1:
+                    cr = _b.sent();
+                    if (!(args[1] == 'enable')) return [3 /*break*/, 4];
                     return [4 /*yield*/, p.start(__filename, {
                             name: "rock",
                             watch: true,
                             cwd: rock_dir
                         })];
-                case 1:
+                case 2:
                     _b.sent();
                     return [4 /*yield*/, p.startup(undefined, {})];
-                case 2:
+                case 3:
                     result = _b.sent();
-                    console.log("writing %s\nenabled on %s", result.destination, result.platform);
-                    return [3 /*break*/, 6];
-                case 3: return [4 /*yield*/, p.del(__filename)];
-                case 4:
+                    console.log("writing %s\n\nenabled on %s", result.destination, result.platform);
+                    return [3 /*break*/, 7];
+                case 4: return [4 /*yield*/, p.del(__filename)];
+                case 5:
                     _b.sent();
                     return [4 /*yield*/, p.uninstallStartup(undefined, {})];
-                case 5:
+                case 6:
                     result = _b.sent();
                     for (_i = 0, _a = result.commands; _i < _a.length; _i++) {
                         c = _a[_i];
                         console.log("> " + c);
                     }
-                    console.log("disabld on " + result.platform);
-                    _b.label = 6;
-                case 6: return [2 /*return*/];
+                    console.log("\ndisabld on " + result.platform);
+                    _b.label = 7;
+                case 7:
+                    process.exit();
+                    return [2 /*return*/];
             }
         });
     });
@@ -167,12 +169,12 @@ function autostart_command() {
 function get_async_pm2() {
     var startfn = function (script, opts, cb) { return pm2_1["default"].start(script, opts, cb); };
     var connectfn = function (noDaemonMode, cb) { return pm2_1["default"].connect(noDaemonMode, cb); };
+    var delfn = function (name, cb) { return pm2_1["default"]["delete"](name, cb); };
     return {
         connect: util_1.promisify(connectfn),
-        disconnect: pm2_1["default"].disconnect,
         start: util_1.promisify(startfn),
         startup: util_1.promisify(pm2_1["default"].startup),
-        del: util_1.promisify(pm2_1["default"].delfn),
+        del: util_1.promisify(delfn),
         uninstallStartup: util_1.promisify(pm2_1["default"].uninstallStartup)
     };
 }

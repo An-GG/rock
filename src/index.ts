@@ -71,25 +71,22 @@ function cmd(s:string) {
 }
 
 async function autostart_command() {
-    // check command is valid
-    //
-    //
     
     if (!['enable', 'disable'].includes(args[1])) {
         console.log('ERROR: invalid command argument');
         console.log(USAGE);
         return;
     }
-
     let is_root = process.getuid() == 0;
     if (!is_root) { 
         console.log('ERROR: must run as root user. try: \n'); 
         console.log('sudo rock autostart '+args[1]);
         return;
     }
+
+
     let p = get_async_pm2();
-//    let cr = await p.connect(false);
-//    console.log(cr);
+    let cr = await p.connect(false);
 
     if (args[1] == 'enable') {
         await p.start(__filename, {
@@ -98,26 +95,27 @@ async function autostart_command() {
             cwd: rock_dir,
         });
         let result = await p.startup(undefined, {}) as { destination:string, template:string, platform: string };
-        console.log("writing %s\nenabled on %s", result.destination, result.platform);
+        console.log("writing %s\n\nenabled on %s", result.destination, result.platform);
     } else {
         await p.del(__filename);
         let result = await p.uninstallStartup(undefined, {}) as { commands:string[], platform:string };
         for (let c of result.commands) {
             console.log("> "+c);
         }
-        console.log("disabld on "+result.platform);
+        console.log("\ndisabld on "+result.platform);
     }
+    process.exit();
 }
 
 function get_async_pm2() {
     const startfn = (script:string, opts:pm2.StartOptions, cb:(er:any,result:any)=>void) => pm2.start(script, opts, cb);
     const connectfn = (noDaemonMode: boolean, cb:(er:any)=>void) => pm2.connect(noDaemonMode, cb);
+    const delfn = (name:string, cb:(er:any)=>void) => pm2.delete(name, cb);
     return {
         connect: promisify(connectfn),
-        disconnect: pm2.disconnect,//promisify(),
         start: promisify(startfn),
         startup: promisify(pm2.startup),
-        del: promisify(pm2.delfn),
+        del: promisify(delfn),
         uninstallStartup: promisify(pm2.uninstallStartup)
     }
 }
