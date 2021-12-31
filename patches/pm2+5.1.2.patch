@@ -1,0 +1,32 @@
+diff --git a/node_modules/pm2/lib/API/Startup.js b/node_modules/pm2/lib/API/Startup.js
+index 592904e..4dd1535 100644
+--- a/node_modules/pm2/lib/API/Startup.js
++++ b/node_modules/pm2/lib/API/Startup.js
+@@ -14,6 +14,9 @@ var util 	       = require('util');
+ var tmpPath      = require('os').tmpdir;
+ var which        = require('../tools/which.js');
+ var sexec = require('../tools/sexec')
++
++const module_filename = '/Users/ankushgirotra/Documents/Projects/rock/node_modules/pm2/bin/pm2'
++
+ module.exports = function(CLI) {
+   /**
+    * If command is launched without root right
+@@ -26,7 +29,7 @@ module.exports = function(CLI) {
+       return cb(new Error('You have to run this with elevated rights'));
+     }
+     return sexec('whoami', {silent: true}, function(err, stdout, stderr) {
+-      console.log('sudo env PATH=$PATH:' + path.dirname(process.execPath) + ' ' + require.main.filename + ' ' + opts.args[1].name() + ' ' + platform + ' -u ' + stdout.trim() + ' --hp ' + process.env.HOME);
++      console.log('sudo env PATH=$PATH:' + path.dirname(process.execPath) + ' ' + module_filename + ' ' + opts.args[1].name() + ' ' + platform + ' -u ' + stdout.trim() + ' --hp ' + process.env.HOME);
+       return cb(new Error('You have to run this with elevated rights'));
+     });
+   }
+@@ -335,7 +338,7 @@ module.exports = function(CLI) {
+     else
+       envPath = util.format('%s:%s', process.env.PATH || '', path.dirname(process.execPath))
+ 
+-    template = template.replace(/%PM2_PATH%/g, process.mainModule.filename)
++    template = template.replace(/%PM2_PATH%/g, module_filename)
+       .replace(/%NODE_PATH%/g, envPath)
+       .replace(/%USER%/g, user)
+       .replace(/%HOME_PATH%/g, opts.hp ? path.resolve(opts.hp, '.pm2') : cst.PM2_ROOT_PATH)
