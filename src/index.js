@@ -115,7 +115,7 @@ function cmd(s) {
 }
 function autostart_command() {
     return __awaiter(this, void 0, void 0, function () {
-        var is_root, p, cr, result, result, _i, _a, c;
+        var is_root, p, result, result, _i, _a, c;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -134,36 +134,32 @@ function autostart_command() {
                         return [2 /*return*/];
                     }
                     p = get_async_pm2();
-                    return [4 /*yield*/, p.connect(false)];
-                case 1:
-                    cr = _b.sent();
-                    console.log(cr);
-                    if (!(args[1] == 'enable')) return [3 /*break*/, 4];
+                    if (!(args[1] == 'enable')) return [3 /*break*/, 3];
                     return [4 /*yield*/, p.start(__filename, {
                             name: "rock",
                             watch: true,
                             cwd: rock_dir
                         })];
-                case 2:
+                case 1:
                     _b.sent();
                     return [4 /*yield*/, p.startup(undefined, {})];
-                case 3:
+                case 2:
                     result = _b.sent();
                     console.log("writing %s\nenabled on %s", result.destination, result.platform);
-                    return [3 /*break*/, 7];
-                case 4: return [4 /*yield*/, p.del(__filename)];
-                case 5:
+                    return [3 /*break*/, 6];
+                case 3: return [4 /*yield*/, p.del(__filename)];
+                case 4:
                     _b.sent();
                     return [4 /*yield*/, p.uninstallStartup(undefined, {})];
-                case 6:
+                case 5:
                     result = _b.sent();
                     for (_i = 0, _a = result.commands; _i < _a.length; _i++) {
                         c = _a[_i];
                         console.log("> " + c);
                     }
                     console.log("disabld on " + result.platform);
-                    _b.label = 7;
-                case 7: return [2 /*return*/];
+                    _b.label = 6;
+                case 6: return [2 /*return*/];
             }
         });
     });
@@ -176,7 +172,7 @@ function get_async_pm2() {
         disconnect: pm2_1["default"].disconnect,
         start: util_1.promisify(startfn),
         startup: util_1.promisify(pm2_1["default"].startup),
-        del: util_1.promisify(pm2_1["default"]["delete"]),
+        del: util_1.promisify(pm2_1["default"].delfn),
         uninstallStartup: util_1.promisify(pm2_1["default"].uninstallStartup)
     };
 }

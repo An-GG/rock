@@ -88,8 +88,8 @@ async function autostart_command() {
         return;
     }
     let p = get_async_pm2();
-    let cr = await p.connect(false);
-    console.log(cr);
+//    let cr = await p.connect(false);
+//    console.log(cr);
 
     if (args[1] == 'enable') {
         await p.start(__filename, {
@@ -117,7 +117,7 @@ function get_async_pm2() {
         disconnect: pm2.disconnect,//promisify(),
         start: promisify(startfn),
         startup: promisify(pm2.startup),
-        del: promisify(pm2.delete),
+        del: promisify(pm2.delfn),
         uninstallStartup: promisify(pm2.uninstallStartup)
     }
 }
