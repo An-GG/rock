@@ -50,12 +50,16 @@ var fs_1 = require("fs");
 var promises_1 = require("fs/promises");
 var util_1 = require("util");
 var pm2_1 = __importDefault(require("pm2"));
-var rock_dir = '~/.rock'.replace('~', process.env.HOME ? process.env.HOME : '~');
+var is_root = process.getuid() == 0;
+var user_home = is_root ? child_process_1.execSync("sudo -u " + process.env.SUDO_USER + ' echo $HOME').toString().split('\n')[0] : process.env.HOME;
+var ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
+var rock_dir = '~/.rock'.replace('~', user_home);
 var log_file = 'log.txt';
 var endpoint_file = 'endpoint.txt';
 var args = (process.argv.length == 2) ? ['tcp', '22'] : process.argv.slice(2);
 var ngrok_path = '/usr/local/bin/ngrok';
-var ngrok_args = __spreadArray(__spreadArray([], args), ['--log', 'stdout', '--log-format', 'json']);
+var ngrok_args = __spreadArray(__spreadArray([], args), ['--config', ngrok_cfg, '--log', 'stdout', '--log-format', 'json']);
+console.log(new Date());
 usage_on_err(function () { process.chdir(rock_dir); }, true);
 var message_queue = [];
 var last_msg = '';
@@ -93,7 +97,7 @@ function data_from_ngrok(str) {
         fs_1.writeFileSync(endpoint_file, message["url"]);
         cmd('git add --all');
         cmd('git commit -m "auto rock"');
-        cmd('git push --force');
+        child_process_1.spawn('/usr/bin/git', ['push', '--force', '--porcelain'], { cwd: rock_dir }).stdout.on('data', function (d) { console.log(d.toString()); });
     }
 }
 function usage_on_err(fn, exit, cmd) {
@@ -105,6 +109,7 @@ function usage_on_err(fn, exit, cmd) {
             console.log("ERROR: '" + cmd + "' failed.\n");
         }
         console.log(USAGE);
+        console.log(e);
         if (exit) {
             process.exit();
         }
@@ -115,51 +120,66 @@ function cmd(s) {
 }
 function autostart_command() {
     return __awaiter(this, void 0, void 0, function () {
-        var is_root, p, cr, result, result, _i, _a, c;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var p, cr, result, rocks, _i, rocks_1, r, result, _a, _b, c;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     if (!['enable', 'disable'].includes(args[1])) {
                         console.log('ERROR: invalid command argument');
                         console.log(USAGE);
                         return [2 /*return*/];
                     }
-                    is_root = process.getuid() == 0;
                     if (!is_root) {
                         console.log('ERROR: must run as root user. try: \n');
                         console.log('sudo rock autostart ' + args[1]);
                         return [2 /*return*/];
                     }
+                    if (!process.env.SUDO_USER) {
+                        console.log('ERROR: the SUDO_USER environment variable must be defined.');
+                        return [2 /*return*/];
+                    }
                     p = get_async_pm2();
                     return [4 /*yield*/, p.connect(false)];
                 case 1:
-                    cr = _b.sent();
+                    cr = _c.sent();
                     if (!(args[1] == 'enable')) return [3 /*break*/, 4];
                     return [4 /*yield*/, p.start(__filename, {
                             name: "rock",
-                            watch: true,
+                            watch: false,
                             cwd: rock_dir
                         })];
                 case 2:
-                    _b.sent();
+                    _c.sent();
                     return [4 /*yield*/, p.startup(undefined, {})];
                 case 3:
-                    result = _b.sent();
+                    result = _c.sent();
                     console.log("writing %s\n\nenabled on %s", result.destination, result.platform);
-                    return [3 /*break*/, 7];
-                case 4: return [4 /*yield*/, p.del(__filename)];
+                    return [3 /*break*/, 11];
+                case 4: return [4 /*yield*/, p.list()];
                 case 5:
-                    _b.sent();
-                    return [4 /*yield*/, p.uninstallStartup(undefined, {})];
+                    rocks = (_c.sent()).filter(function (r) { return r.name == 'rock'; });
+                    _i = 0, rocks_1 = rocks;
+                    _c.label = 6;
                 case 6:
-                    result = _b.sent();
-                    for (_i = 0, _a = result.commands; _i < _a.length; _i++) {
-                        c = _a[_i];
+                    if (!(_i < rocks_1.length)) return [3 /*break*/, 9];
+                    r = rocks_1[_i];
+                    return [4 /*yield*/, p.del(r.pm_id)];
+                case 7:
+                    _c.sent();
+                    _c.label = 8;
+                case 8:
+                    _i++;
+                    return [3 /*break*/, 6];
+                case 9: return [4 /*yield*/, p.uninstallStartup(undefined, {})];
+                case 10:
+                    result = _c.sent();
+                    for (_a = 0, _b = result.commands; _a < _b.length; _a++) {
+                        c = _b[_a];
                         console.log("> " + c);
                     }
-                    console.log("\ndisabld on " + result.platform);
-                    _b.label = 7;
-                case 7:
+                    console.log("\ndisabled on " + result.platform);
+                    _c.label = 11;
+                case 11:
                     process.exit();
                     return [2 /*return*/];
             }
@@ -170,12 +190,14 @@ function get_async_pm2() {
     var startfn = function (script, opts, cb) { return pm2_1["default"].start(script, opts, cb); };
     var connectfn = function (noDaemonMode, cb) { return pm2_1["default"].connect(noDaemonMode, cb); };
     var delfn = function (name, cb) { return pm2_1["default"]["delete"](name, cb); };
+    var listfn = function (cb) { return pm2_1["default"].list(cb); };
     return {
         connect: util_1.promisify(connectfn),
         start: util_1.promisify(startfn),
         startup: util_1.promisify(pm2_1["default"].startup),
         del: util_1.promisify(delfn),
-        uninstallStartup: util_1.promisify(pm2_1["default"].uninstallStartup)
+        uninstallStartup: util_1.promisify(pm2_1["default"].uninstallStartup),
+        list: util_1.promisify(listfn)
     };
 }
 var USAGE = "rock <ngrok args> | autostart\n\n    Create a git repo at ~/.rock and make sure 'git push --force' and 'ngrok' works, then start 'rock <ngrok args>' or just 'rock' for default ssh configuration.\n\n    rock\n        Equivalent to 'rock tcp 22'.\n\n    rock <ngrok args>\n        Passes <ngrok args> to ngrok.\n\n    rock autostart <enable|disable>\n        Launch at startup automatically. Must run this command as root.";

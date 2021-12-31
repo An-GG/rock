@@ -1,6 +1,6 @@
 {
   "name": "@an-gg/rock",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "rock",
   "main": "index.js",
   "bin": {

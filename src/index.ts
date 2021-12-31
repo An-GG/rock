@@ -1,17 +1,23 @@
 #!/usr/bin/env node
-
 import { exec, execSync, spawn } from "child_process";
 import { appendFileSync, writeFileSync } from "fs";
 import { appendFile } from "fs/promises";
 import { promisify } from "util";
 import pm2 from 'pm2';
 
-const rock_dir = '~/.rock'.replace('~', process.env.HOME ? process.env.HOME : '~');
+const is_root = process.getuid() == 0;
+const user_home = is_root ? execSync("sudo -u "+process.env.SUDO_USER+' echo $HOME').toString().split('\n')[0] : process.env.HOME!;
+
+const ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
+const rock_dir = '~/.rock'.replace('~', user_home);
 const log_file = 'log.txt';
 const endpoint_file = 'endpoint.txt'
+
 const args = (process.argv.length == 2) ? ['tcp', '22'] : process.argv.slice(2);
 const ngrok_path = '/usr/local/bin/ngrok';
-const ngrok_args = [...args, '--log','stdout','--log-format','json'];
+const ngrok_args = [...args, '--config', ngrok_cfg, '--log','stdout','--log-format','json'];
+
+console.log(new Date());
 
 usage_on_err(()=>{process.chdir(rock_dir)}, true);
 
@@ -54,7 +60,7 @@ function data_from_ngrok(str: string) {
         writeFileSync(endpoint_file, message["url"]);
         cmd('git add --all');
         cmd('git commit -m "auto rock"');
-        cmd('git push --force');
+        spawn('/usr/bin/git', ['push', '--force', '--porcelain'], { cwd: rock_dir }).stdout.on('data', (d) => {console.log(d.toString());});
     }
 }
 
@@ -62,6 +68,7 @@ function usage_on_err(fn:()=>any, exit?:boolean, cmd?: string) {
     try { fn(); } catch(e) {
         if (cmd) { console.log("ERROR: '" + cmd + "' failed.\n");}
         console.log(USAGE);
+        console.log(e);
         if (exit) { process.exit(); }
     }
 }
@@ -69,54 +76,61 @@ function usage_on_err(fn:()=>any, exit?:boolean, cmd?: string) {
 function cmd(s:string) {
     usage_on_err(()=>{execSync(s);}, false, s);
 }
-
 async function autostart_command() {
-    
+   
     if (!['enable', 'disable'].includes(args[1])) {
         console.log('ERROR: invalid command argument');
         console.log(USAGE);
         return;
     }
-    let is_root = process.getuid() == 0;
     if (!is_root) { 
         console.log('ERROR: must run as root user. try: \n'); 
         console.log('sudo rock autostart '+args[1]);
         return;
     }
-
+    if (!process.env.SUDO_USER) {
+        console.log('ERROR: the SUDO_USER environment variable must be defined.');
+        return;
+    }
 
     let p = get_async_pm2();
     let cr = await p.connect(false);
-
+    
     if (args[1] == 'enable') {
         await p.start(__filename, {
             name: "rock",
-            watch: true,
+            watch: false,
             cwd: rock_dir,
         });
         let result = await p.startup(undefined, {}) as { destination:string, template:string, platform: string };
         console.log("writing %s\n\nenabled on %s", result.destination, result.platform);
     } else {
-        await p.del(__filename);
+        let rocks = (await p.list()).filter(r => r.name == 'rock');
+        for (let r of rocks) {
+            await p.del(r.pm_id as any);
+        }
         let result = await p.uninstallStartup(undefined, {}) as { commands:string[], platform:string };
         for (let c of result.commands) {
             console.log("> "+c);
         }
-        console.log("\ndisabld on "+result.platform);
+        console.log("\ndisabled on "+result.platform);
     }
     process.exit();
 }
+
 
 function get_async_pm2() {
     const startfn = (script:string, opts:pm2.StartOptions, cb:(er:any,result:any)=>void) => pm2.start(script, opts, cb);
     const connectfn = (noDaemonMode: boolean, cb:(er:any)=>void) => pm2.connect(noDaemonMode, cb);
     const delfn = (name:string, cb:(er:any)=>void) => pm2.delete(name, cb);
+    const listfn = (cb:(er:any, procs: Parameters<Parameters<typeof pm2.list>[0]>[1])=>void) => pm2.list(cb);
     return {
         connect: promisify(connectfn),
         start: promisify(startfn),
         startup: promisify(pm2.startup),
         del: promisify(delfn),
-        uninstallStartup: promisify(pm2.uninstallStartup)
+        uninstallStartup: promisify(pm2.uninstallStartup),
+        list: promisify(listfn)
     }
 }
 

@@ -6,6 +6,7 @@ script which will
 - start the ngrok client
 - write ngrock endpoint url to `~/.rock/endpoint.txt`
 - commit and push this file to a private git repo
+- can automatically start on system startup
 
 ## install rock
 
@@ -25,6 +26,11 @@ $ rock
 or 
 ```sh
 $ rock <ngrok args>
+```
+
+## make rock autostart
+```sh
+$ sudo rock autostart enable
 ```
 
 
