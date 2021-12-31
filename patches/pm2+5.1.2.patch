@@ -1,18 +1,23 @@
+diff --git a/node_modules/pm2/lib/API/.Startup.js.swp b/node_modules/pm2/lib/API/.Startup.js.swp
+new file mode 100644
+index 0000000..00c3070
+Binary files /dev/null and b/node_modules/pm2/lib/API/.Startup.js.swp differ
 diff --git a/node_modules/pm2/lib/API/Startup.js b/node_modules/pm2/lib/API/Startup.js
-index 592904e..4dd1535 100644
+index 592904e..43ef73c 100644
 --- a/node_modules/pm2/lib/API/Startup.js
 +++ b/node_modules/pm2/lib/API/Startup.js
-@@ -14,6 +14,9 @@ var util 	       = require('util');
+@@ -14,6 +14,10 @@ var util 	       = require('util');
  var tmpPath      = require('os').tmpdir;
  var which        = require('../tools/which.js');
  var sexec = require('../tools/sexec')
++var path_module = require('path');
 +
-+const module_filename = '/Users/ankushgirotra/Documents/Projects/rock/node_modules/pm2/bin/pm2'
++const module_filename = path_module.normalize(__filename + '/../../../bin/pm2');
 +
  module.exports = function(CLI) {
    /**
     * If command is launched without root right
-@@ -26,7 +29,7 @@ module.exports = function(CLI) {
+@@ -26,7 +30,7 @@ module.exports = function(CLI) {
        return cb(new Error('You have to run this with elevated rights'));
      }
      return sexec('whoami', {silent: true}, function(err, stdout, stderr) {
@@ -21,7 +26,7 @@ index 592904e..4dd1535 100644
        return cb(new Error('You have to run this with elevated rights'));
      });
    }
-@@ -335,7 +338,7 @@ module.exports = function(CLI) {
+@@ -335,7 +339,7 @@ module.exports = function(CLI) {
      else
        envPath = util.format('%s:%s', process.env.PATH || '', path.dirname(process.execPath))
  
@@ -30,3 +35,34 @@ index 592904e..4dd1535 100644
        .replace(/%NODE_PATH%/g, envPath)
        .replace(/%USER%/g, user)
        .replace(/%HOME_PATH%/g, opts.hp ? path.resolve(opts.hp, '.pm2') : cst.PM2_ROOT_PATH)
+@@ -387,7 +391,8 @@ module.exports = function(CLI) {
+ 
+       return cb(null, {
+         destination  : destination,
+-        template : template
++        template : template,
++        platform : platform
+       });
+     });
+   };
+diff --git a/node_modules/pm2/types/index.d.ts b/node_modules/pm2/types/index.d.ts
+index b2e8a6d..2b9c700 100644
+--- a/node_modules/pm2/types/index.d.ts
++++ b/node_modules/pm2/types/index.d.ts
+@@ -181,7 +181,15 @@ export function sendSignalToProcessName(signal:string|number, process: number|st
+  * @param platform
+  * @param errback
+  */
+-export function startup(platform: Platform, errback: ErrResultCallback): void;
++export function startup(platform: Platform | undefined, options: StartOptions, errback: ErrResultCallback): void;
++
++
++/**
++ *  UNDOCUMENTED
++ *  Uninstalls startup script for pm2.
++ */
++export function uninstallStartup(platform: Platform | undefined, options: StartOptions, errback: ErrResultCallback): void;
++
+ 
+ /**
+  * - Send an set of data as object to a specific process

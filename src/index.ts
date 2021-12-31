@@ -70,7 +70,7 @@ function cmd(s:string) {
     usage_on_err(()=>{execSync(s);}, false, s);
 }
 
-function autostart_command() {
+async function autostart_command() {
     // check command is valid
     //
     //
@@ -87,51 +87,41 @@ function autostart_command() {
         console.log('sudo rock autostart '+args[1]);
         return;
     }
+    let p = get_async_pm2();
+    let cr = await p.connect(false);
+    console.log(cr);
 
     if (args[1] == 'enable') {
-        pm2.start(__filename, {
+        await p.start(__filename, {
             name: "rock",
             watch: true,
             cwd: rock_dir,
-        }, (e1, proc)=>{
-            if (e1) {
-                console.log("\nERROR: failed to enable autostart.\n");
-                console.log(e1);
-                process.exit();
-            } else {
-
-                pm2.startup(undefined, {} ,(e2, result) => {
-                    if (e2) {
-                        console.log('\nERROR: failed to enable autostart.\n');
-                        console.log(e2);
-                    } else {
-                        console.log("Enabled");
-                    }
-                    process.exit();
-                });
-
-            }
         });
+        let result = await p.startup(undefined, {}) as { destination:string, template:string, platform: string };
+        console.log("writing %s\nenabled on %s", result.destination, result.platform);
     } else {
-        pm2.delete(__filename, (e1, proc)=>{
-            if (e1) {
-                console.log("\nERROR: failed to disable autostart.\n");
-                console.log(e1);
-            } else {
-                pm2.uninstallStartup(undefined, {}, (e2, result) => {
-                    if (e2) {
-                        console.log('\nERROR: failed to disable autostart.\n');
-                        console.log(e2);
-                    } else {
-                        console.log("Disabled");
-                    }
-                    process.exit();
-                });
-            }
-        });
+        await p.del(__filename);
+        let result = await p.uninstallStartup(undefined, {}) as { commands:string[], platform:string };
+        for (let c of result.commands) {
+            console.log("> "+c);
+        }
+        console.log("disabld on "+result.platform);
     }
-    
 }
+
+function get_async_pm2() {
+    const startfn = (script:string, opts:pm2.StartOptions, cb:(er:any,result:any)=>void) => pm2.start(script, opts, cb);
+    const connectfn = (noDaemonMode: boolean, cb:(er:any)=>void) => pm2.connect(noDaemonMode, cb);
+    return {
+        connect: promisify(connectfn),
+        disconnect: pm2.disconnect,//promisify(),
+        start: promisify(startfn),
+        startup: promisify(pm2.startup),
+        del: promisify(pm2.delete),
+        uninstallStartup: promisify(pm2.uninstallStartup)
+    }
+}
+
 
 const USAGE = 
 `rock <ngrok args> | autostart
