@@ -1,5 +1,7 @@
 # rock
 
+![alt text](https://www.cs.utexas.edu/~angg/rock.png)
+
 ## what rock??
 
 script which will
@@ -26,6 +28,3 @@ or
 ```sh
 $ rock <ngrok args>
 ```
-
-
-![alt text](https://www.cs.utexas.edu/~angg/rock.png)
