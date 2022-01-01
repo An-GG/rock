@@ -1,5 +1,7 @@
 # rock
 
+![alt text](https://www.cs.utexas.edu/~angg/rock.png)
+
 ## what rock??
 
 script which will
@@ -32,6 +34,3 @@ $ rock <ngrok args>
 ```sh
 $ sudo rock autostart enable
 ```
-
-
-![alt text](https://www.cs.utexas.edu/~angg/rock.png)
