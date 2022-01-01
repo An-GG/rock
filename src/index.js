@@ -56,11 +56,7 @@ var user_home = is_root ? child_process_1.execSync("sudo -u " + process.env.SUDO
 var ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
 var rock_dir = '~/.rock'.replace('~', user_home);
 var git = simple_git_1["default"]({
-    baseDir: rock_dir,
-    spawnOptions: {
-        gid: 20,
-        uid: 501
-    }
+    baseDir: rock_dir
 });
 var log_file = 'log.txt';
 var endpoint_file = 'endpoint.txt';
@@ -92,7 +88,7 @@ function ngrok_command() {
 }
 function data_from_ngrok(str) {
     return __awaiter(this, void 0, void 0, function () {
-        var message, rres;
+        var message, err_1, push_result, err_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -105,17 +101,40 @@ function data_from_ngrok(str) {
                         console.log(str);
                         return [2 /*return*/];
                     }
-                    if (!(message["msg"] == "started tunnel")) return [3 /*break*/, 2];
+                    if (!(message["msg"] == "started tunnel")) return [3 /*break*/, 8];
                     console.log(message["url"]);
                     fs_1.writeFileSync(endpoint_file, message["url"]);
-                    cmd('git add --all');
-                    cmd('git commit -m "auto rock"');
-                    return [4 /*yield*/, git.push()];
+                    _a.label = 1;
                 case 1:
-                    rres = _a.sent();
-                    console.log(rres);
-                    _a.label = 2;
-                case 2: return [2 /*return*/];
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, git.add(['--all'])];
+                case 2:
+                    _a.sent();
+                    return [4 /*yield*/, git.commit("autorock")];
+                case 3:
+                    _a.sent();
+                    return [3 /*break*/, 5];
+                case 4:
+                    err_1 = _a.sent();
+                    console.log(err_1);
+                    console.log("\n\nERROR: failed to commit changes.\n" + USAGE);
+                    return [2 /*return*/];
+                case 5:
+                    _a.trys.push([5, 7, , 8]);
+                    return [4 /*yield*/, git.push(['--force'])];
+                case 6:
+                    push_result = _a.sent();
+                    console.log("Push Complete --------> " + push_result.repo + " @ " + push_result.update.hash.to);
+                    return [3 /*break*/, 8];
+                case 7:
+                    err_2 = _a.sent();
+                    console.log(err_2);
+                    console.log("\n\nERROR: committed changes, but failed to push.\n" +
+                        "Make sure the root user has access to git credentials and can run 'git push' in " +
+                        rock_dir + ".\n\n" +
+                        "Note: On macos, the default credential helper (osxkeychain) will NOT work.\n\n");
+                    return [2 /*return*/];
+                case 8: return [2 /*return*/];
             }
         });
     });
@@ -134,9 +153,6 @@ function usage_on_err(fn, exit, cmd) {
             process.exit();
         }
     }
-}
-function cmd(s) {
-    usage_on_err(function () { child_process_1.execSync(s); }, false, s);
 }
 function autostart_command() {
     return __awaiter(this, void 0, void 0, function () {

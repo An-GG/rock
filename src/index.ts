@@ -14,10 +14,6 @@ const rock_dir = '~/.rock'.replace('~', user_home);
 
 const git = simpleGit({
     baseDir: rock_dir,
-    spawnOptions: {
-        gid: 20,
-        uid: 501
-    }
 });
 
 const log_file = 'log.txt';
@@ -68,11 +64,27 @@ async function data_from_ngrok(str: string) {
     if (message["msg"] == "started tunnel") {
         console.log(message["url"]);
         writeFileSync(endpoint_file, message["url"]);
-        cmd('git add --all');
-        cmd('git commit -m "auto rock"');
-        let rres = await git.push();
-        console.log(rres);
-        //cmd(`sudo --login --user=ankushgirotra sh -c 'cd ~/.rock && git push --force'`);
+
+        try {
+            await git.add(['--all']);
+            await git.commit("autorock");
+        } catch(err) {
+            console.log(err);
+            console.log("\n\nERROR: failed to commit changes.\n"+USAGE); 
+            return;
+        }
+        
+        try  {
+            let push_result = await git.push(['--force']);
+            console.log("Push Complete --------> " + push_result.repo! + " @ " + push_result.update!.hash.to);
+        } catch(err) {
+            console.log(err);
+            console.log("\n\nERROR: committed changes, but failed to push.\n"+
+                        "Make sure the root user has access to git credentials and can run 'git push' in "+
+                        rock_dir+".\n\n"+
+                        "Note: On macos, the default credential helper (osxkeychain) will NOT work.\n\n"); 
+            return;
+        }
     }
 }
 
@@ -85,9 +97,6 @@ function usage_on_err(fn:()=>any, exit?:boolean, cmd?: string) {
     }
 }
 
-function cmd(s:string) {
-    usage_on_err(()=>{execSync(s);}, false, s);
-}
 async function autostart_command() {
    
     if (!['enable', 'disable'].includes(args[1])) {
