@@ -3,6 +3,7 @@ import { exec, execSync, spawn } from "child_process";
 import { appendFileSync, writeFileSync } from "fs";
 import { appendFile } from "fs/promises";
 import { promisify } from "util";
+import simpleGit, {SimpleGit} from 'simple-git';
 import pm2 from 'pm2';
 
 const is_root = process.getuid() == 0;
@@ -10,6 +11,15 @@ const user_home = is_root ? execSync("sudo -u "+process.env.SUDO_USER+' echo $HO
 
 const ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
 const rock_dir = '~/.rock'.replace('~', user_home);
+
+const git = simpleGit({
+    baseDir: rock_dir,
+    spawnOptions: {
+        gid: 20,
+        uid: 501
+    }
+});
+
 const log_file = 'log.txt';
 const endpoint_file = 'endpoint.txt'
 
@@ -48,7 +58,7 @@ function ngrok_command() {
         }
     });
 }
-function data_from_ngrok(str: string) {
+async function data_from_ngrok(str: string) {
     let message = {} as any;
     try { message = JSON.parse(str); } catch(json_err) {
         console.log("ERROR: ngrok output could not be parsed as JSON:");
@@ -60,7 +70,9 @@ function data_from_ngrok(str: string) {
         writeFileSync(endpoint_file, message["url"]);
         cmd('git add --all');
         cmd('git commit -m "auto rock"');
-        spawn('/usr/bin/git', ['push', '--force', '--porcelain'], { cwd: rock_dir }).stdout.on('data', (d) => {console.log(d.toString());});
+        let rres = await git.push();
+        console.log(rres);
+        //cmd(`sudo --login --user=ankushgirotra sh -c 'cd ~/.rock && git push --force'`);
     }
 }
 

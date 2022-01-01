@@ -49,11 +49,19 @@ var child_process_1 = require("child_process");
 var fs_1 = require("fs");
 var promises_1 = require("fs/promises");
 var util_1 = require("util");
+var simple_git_1 = __importDefault(require("simple-git"));
 var pm2_1 = __importDefault(require("pm2"));
 var is_root = process.getuid() == 0;
 var user_home = is_root ? child_process_1.execSync("sudo -u " + process.env.SUDO_USER + ' echo $HOME').toString().split('\n')[0] : process.env.HOME;
 var ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
 var rock_dir = '~/.rock'.replace('~', user_home);
+var git = simple_git_1["default"]({
+    baseDir: rock_dir,
+    spawnOptions: {
+        gid: 20,
+        uid: 501
+    }
+});
 var log_file = 'log.txt';
 var endpoint_file = 'endpoint.txt';
 var args = (process.argv.length == 2) ? ['tcp', '22'] : process.argv.slice(2);
@@ -83,22 +91,34 @@ function ngrok_command() {
     });
 }
 function data_from_ngrok(str) {
-    var message = {};
-    try {
-        message = JSON.parse(str);
-    }
-    catch (json_err) {
-        console.log("ERROR: ngrok output could not be parsed as JSON:");
-        console.log(str);
-        return;
-    }
-    if (message["msg"] == "started tunnel") {
-        console.log(message["url"]);
-        fs_1.writeFileSync(endpoint_file, message["url"]);
-        cmd('git add --all');
-        cmd('git commit -m "auto rock"');
-        child_process_1.spawn('/usr/bin/git', ['push', '--force', '--porcelain'], { cwd: rock_dir }).stdout.on('data', function (d) { console.log(d.toString()); });
-    }
+    return __awaiter(this, void 0, void 0, function () {
+        var message, rres;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    message = {};
+                    try {
+                        message = JSON.parse(str);
+                    }
+                    catch (json_err) {
+                        console.log("ERROR: ngrok output could not be parsed as JSON:");
+                        console.log(str);
+                        return [2 /*return*/];
+                    }
+                    if (!(message["msg"] == "started tunnel")) return [3 /*break*/, 2];
+                    console.log(message["url"]);
+                    fs_1.writeFileSync(endpoint_file, message["url"]);
+                    cmd('git add --all');
+                    cmd('git commit -m "auto rock"');
+                    return [4 /*yield*/, git.push()];
+                case 1:
+                    rres = _a.sent();
+                    console.log(rres);
+                    _a.label = 2;
+                case 2: return [2 /*return*/];
+            }
+        });
+    });
 }
 function usage_on_err(fn, exit, cmd) {
     try {
