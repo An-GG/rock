@@ -21,8 +21,6 @@
   },
   "homepage": "https://github.com/An-GG/rock#readme",
   "devDependencies": {
-    "@tsconfig/node12": "^1.0.9",
-    "@tsconfig/node14": "^1.0.1",
     "@tsconfig/node16": "^1.0.2",
     "@types/node": "^17.0.5"
   },

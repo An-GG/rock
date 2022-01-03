@@ -1,6 +1,0 @@
-const rock_dir = '/Users/ankushgirotra/.rock'
-let cp = require('child_process');
-const args = ['tcp', '22', '--config', '/Users/ankushgirotra/.ngrok2/ngrok.yml']
-const ngrok_args = [...args, '--log','stdout','--log-format','json'];
-const ngrok_path = '/usr/local/bin/ngrok';
-let ngrok_process = cp.spawn(ngrok_path, ngrok_args, { cwd: rock_dir }); ngrok_process.stdout.on('data', (d) => {console.log(d.toString());});
