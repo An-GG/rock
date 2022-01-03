@@ -25,6 +25,7 @@
     "@types/node": "^17.0.5"
   },
   "dependencies": {
+    "ngrok": "^4.2.2",
     "patch-package": "^6.4.7",
     "pm2": "^5.1.2",
     "simple-git": "^2.48.0"
