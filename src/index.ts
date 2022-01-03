@@ -1,7 +1,7 @@
 import ngrok from 'ngrok'
 
 async function main() {
-   let url = await ngrok.connect(); 
-   console.log(url);
+   const api = ngrok.getApi()!;
+   console.log(await api.listTunnels());
 }
 main();
