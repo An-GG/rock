@@ -29,6 +29,7 @@
   "dependencies": {
     "patch-package": "^6.4.7",
     "pm2": "^5.1.2",
-    "simple-git": "^2.48.0"
+    "simple-git": "^2.48.0",
+    "typescript": "^5.0.2"
   }
 }

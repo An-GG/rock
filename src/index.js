@@ -15,7 +15,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -36,15 +36,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from) {
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-        to[j] = from[i];
-    return to;
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
 };
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var child_process_1 = require("child_process");
 var fs_1 = require("fs");
 var promises_1 = require("fs/promises");
@@ -52,25 +56,25 @@ var util_1 = require("util");
 var simple_git_1 = __importDefault(require("simple-git"));
 var pm2_1 = __importDefault(require("pm2"));
 var is_root = process.getuid() == 0;
-var user_home = is_root ? child_process_1.execSync("sudo -u " + process.env.SUDO_USER + ' echo $HOME').toString().split('\n')[0] : process.env.HOME;
+var user_home = is_root ? (0, child_process_1.execSync)("sudo -u " + process.env.SUDO_USER + ' echo $HOME').toString().split('\n')[0] : process.env.HOME;
 var ngrok_cfg = '~/.ngrok2/ngrok.yml'.replace('~', user_home);
 var rock_dir = '~/.rock'.replace('~', user_home);
-var git = simple_git_1["default"]({
-    baseDir: rock_dir
+var git = (0, simple_git_1.default)({
+    baseDir: rock_dir,
 });
 var log_file = 'log.txt';
 var endpoint_file = 'endpoint.txt';
 var args = (process.argv.length == 2) ? ['tcp', '22'] : process.argv.slice(2);
 var ngrok_path = '/usr/local/bin/ngrok';
-var ngrok_args = __spreadArray(__spreadArray([], args), ['--config', ngrok_cfg, '--log', 'stdout', '--log-format', 'json']);
+var ngrok_args = __spreadArray(__spreadArray([], args, true), ['--config', ngrok_cfg, '--log', 'stdout', '--log-format', 'json'], false);
 console.log(new Date());
 usage_on_err(function () { process.chdir(rock_dir); }, true);
 var message_queue = [];
 var last_msg = '';
 function ngrok_command() {
-    var ngrok_process = child_process_1.spawn(ngrok_path, ngrok_args, { cwd: rock_dir });
+    var ngrok_process = (0, child_process_1.spawn)(ngrok_path, ngrok_args, { cwd: rock_dir });
     ngrok_process.stdout.on('data', function (d) {
-        promises_1.appendFile(log_file, d);
+        (0, promises_1.appendFile)(log_file, d);
         // Two possible cases: 
         // 1. the last has not finished sending and does not end in '\n'
         //      -> last msg in msgs array cannot be parsed
@@ -103,7 +107,7 @@ function data_from_ngrok(str) {
                     }
                     if (!(message["msg"] == "started tunnel")) return [3 /*break*/, 8];
                     console.log(message["url"]);
-                    fs_1.writeFileSync(endpoint_file, message["url"]);
+                    (0, fs_1.writeFileSync)(endpoint_file, message["url"]);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
@@ -182,7 +186,7 @@ function autostart_command() {
                     return [4 /*yield*/, p.start(__filename, {
                             name: "rock",
                             watch: false,
-                            cwd: rock_dir
+                            cwd: rock_dir,
                         })];
                 case 2:
                     _c.sent();
@@ -223,17 +227,17 @@ function autostart_command() {
     });
 }
 function get_async_pm2() {
-    var startfn = function (script, opts, cb) { return pm2_1["default"].start(script, opts, cb); };
-    var connectfn = function (noDaemonMode, cb) { return pm2_1["default"].connect(noDaemonMode, cb); };
-    var delfn = function (name, cb) { return pm2_1["default"]["delete"](name, cb); };
-    var listfn = function (cb) { return pm2_1["default"].list(cb); };
+    var startfn = function (script, opts, cb) { return pm2_1.default.start(script, opts, cb); };
+    var connectfn = function (noDaemonMode, cb) { return pm2_1.default.connect(noDaemonMode, cb); };
+    var delfn = function (name, cb) { return pm2_1.default.delete(name, cb); };
+    var listfn = function (cb) { return pm2_1.default.list(cb); };
     return {
-        connect: util_1.promisify(connectfn),
-        start: util_1.promisify(startfn),
-        startup: util_1.promisify(pm2_1["default"].startup),
-        del: util_1.promisify(delfn),
-        uninstallStartup: util_1.promisify(pm2_1["default"].uninstallStartup),
-        list: util_1.promisify(listfn)
+        connect: (0, util_1.promisify)(connectfn),
+        start: (0, util_1.promisify)(startfn),
+        startup: (0, util_1.promisify)(pm2_1.default.startup),
+        del: (0, util_1.promisify)(delfn),
+        uninstallStartup: (0, util_1.promisify)(pm2_1.default.uninstallStartup),
+        list: (0, util_1.promisify)(listfn)
     };
 }
 var USAGE = "rock <ngrok args> | autostart\n\n    Create a git repo at ~/.rock and make sure 'git push --force' and 'ngrok' works, then start 'rock <ngrok args>' or just 'rock' for default ssh configuration.\n\n    rock\n        Equivalent to 'rock tcp 22'.\n\n    rock <ngrok args>\n        Passes <ngrok args> to ngrok.\n\n    rock autostart <enable|disable>\n        Launch at startup automatically. Must run this command as root.";
